@@ -23,18 +23,20 @@ use poem::Result;
 use poem::Route;
 use poem::Server;
 
-use fuel_crypto::PublicKey;
 use fuel_crypto::SecretKey;
-use fuel_gql_client::fuel_tx::Address;
+use fuel_gql_client::fuel_tx::ContractId;
 use fuels_signers::provider::Provider;
 use fuels_signers::wallet::DEFAULT_DERIVATION_PATH_PREFIX;
 use fuels_signers::WalletUnlocked;
 use fuels_types::bech32::Bech32Address;
-use fuels_types::bech32::FUEL_BECH32_HRP;
 
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
+const CONTRACT_ID: &str = "0xb6aa962b6538fa6951def08282136df7d2dec885102d1c9a6ec8f7e0701ba2b3";
+
+use fuels::prelude::*;
+abigen!(FuelScape,"../contract/out/debug/fuelscape-abi.json");
 
 lazy_static! {
     static ref WALLET_LOOKUP: Mutex<HashMap<String, Bech32Address>> = {
@@ -84,19 +86,22 @@ fn create_link(req: Json<CreateLinkRequest>) -> Result<Json<CreateLinkResponse>>
 }
 
 #[derive(Deserialize)]
-struct CreateKillRequest {
+struct CreateItemRequest {
     player: String,
-    mob: u64,
+    item: u64,
+    amount: u64,
 }
 
 #[derive(Serialize)]
-struct CreateKillResponse {
-    legacy: String,
-    address: String,
+struct CreateItemResponse {
+    player: String,
+    item: u64,
+    amount: u64,
+    logs: Vec<String>,
 }
 
 #[handler]
-async fn create_kill(req: Json<CreateKillRequest>) -> Result<Json<CreateKillResponse>> {
+async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResponse>> {
     let wallet = {
         let lookup = WALLET_LOOKUP.lock().unwrap();
         match lookup.get(&req.player) {
@@ -130,12 +135,38 @@ async fn create_kill(req: Json<CreateKillRequest>) -> Result<Json<CreateKillResp
 
     let unlocked = WalletUnlocked::new_from_private_key(secret, Some(provider));
 
-    let public = PublicKey::from(&secret);
-    let address = Bech32Address::new(FUEL_BECH32_HRP, public.hash());
+    let address = match ContractId::from_str(CONTRACT_ID) {
+        Ok(address) => address,
+        Err(msg) => return Err(InternalServerError(Error::new(
+            ErrorKind::InvalidInput,
+            msg,
+        ))),
+    };
+    
+    let recipient = match Bech32Address::from_str(&req.player) {
+        Ok(recipient) => recipient,
+        Err(err) => return Err(BadRequest(err)),
+    };
 
-    let res = CreateKillResponse {
-        legacy: public.hash().to_string(),
-        address: address.to_string(),
+    let fuelscape = FuelScape::new(address.into(), unlocked);
+
+
+    let result = match fuelscape.methods()
+        .give(recipient.into(), req.item, req.amount)
+        .call()
+        .await {
+            Ok(result) => result,
+            Err(err) => return Err(InternalServerError(err)),
+    };
+
+    let logs = fuelscape.fetch_logs(&result.receipts);
+
+
+    let res = CreateItemResponse {
+        player: req.player.clone(),
+        item: req.item,
+        amount: req.amount,
+        logs: logs,
     };
 
     Ok(Json(res))
@@ -145,7 +176,7 @@ async fn create_kill(req: Json<CreateKillRequest>) -> Result<Json<CreateKillResp
 async fn main() -> Result<(), std::io::Error> {
     let app = Route::new()
         .at("/links/", post(create_link))
-        .at("/kills/", post(create_kill));
+        .at("/items/", post(create_item));
 
     let url = format!("127.0.0.1:{}", API_PORT);
     Server::new(TcpListener::bind(url)).run(app).await

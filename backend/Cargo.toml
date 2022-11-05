@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 fuel-crypto = "0.6.2"
 fuel-gql-client = "0.13.2"
+fuels = "0.29.0"
 fuels-signers = "0.29.0"
 fuels-types = "0.29.0"
 lazy_static = "1.4.0"
