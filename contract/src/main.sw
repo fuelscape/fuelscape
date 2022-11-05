@@ -5,26 +5,26 @@ use std::chain::auth::AuthError;
 use std::chain::auth::msg_sender;
 use std::logging::log;
 
-// Minted is the mint event emitted when a new mob kill is minted.
-struct Minted {
-    wallet: Address,
-    mob: u64,
+struct Locked {
+    player: Address,
 }
 
-// Burned is the burn event emitted when mob kills are burned.
-struct Burned {
-    wallet: Address,
-    mob: u64,
+struct Unlocked {
+    player: Address,
+}
+
+struct Given {
+    player: Address,
+    item: u64,
     amount: u64,
 }
 
-// Crafted is the craft event emitted when a new add-on item is crafted.
-struct Crafted {
-    wallet: Address,
+struct Taken {
+    player: Address,
     item: u64,
+    amount: u64,
 }
 
-// Sent is the send item emitted when add-on items are transfered.
 struct Sent {
     sender: Address,
     receiver: Address,
@@ -32,97 +32,120 @@ struct Sent {
     amount: u64,
 }
 
-// Kill represents a number of kills of the same mob type.
-struct Kill {
-    mob: u64,
-    amount: u64,
-}
-
 abi FuelScape {
-    // mint_kill mints a mob kill of the given mob ID for the player with the
-    // given wallet address.
+    // lock is called by the admin to lock a player's wallet.
     #[storage(read, write)]
-    fn mint_kill(wallet: Address, mob: u64);
+    fn lock(player: Address);
 
-    // craft_item crafts a random item for the sending wallet, consuming/burning
-    // the provided mob kills.
+    // unlock is called by the admin to unlock a player's wallet.
     #[storage(read, write)]
-    fn craft_item(kills: Vec<Kill>);
+    fn unlock(player: Address);
 
-    // send_item sends the given amount of the given item ID to the given
-    // receiver from the sending wallet.
+    // give is called by the admin account to give a number of items to a player.
     #[storage(read, write)]
-    fn send_item(receiver: Address, item: u64, amount: u64);
+    fn give(player: Address, item: u64, amount: u64);
+
+    // take is called by the admin account to take a number of items from a player.
+    #[storage(read, write)]
+    fn take(player: Address, item: u64, amount: u64);
+
+    // transfer is called by a player to transfer items to another player.
+    #[storage(read, write)]
+    fn send(to: Address, item: u64, amount: u64);
 }
 
 // ADMIN represents the admin wallet of the backend service, which can mint kills.
-const ADMIN = ~Address::from(0x9299da6c73e6dc03eeabcce242bb347de3f5f56cd1c70926d76526d7ed199b8b);
+const ADMIN = ~Address::from(0x688422a9abd94f79248f62d7c7f61be1c7f13eda365dfb20b57f3ecc638456fd);
 
 storage {
-    // kills maps an address an mob ID to an amount of mob kills.
-    kills: StorageMap<(Address, u64), u64> = StorageMap{},
+    // players holds a list of players and whether they are locked
+    players: StorageMap<Address, bool> = StorageMap{},
     // items maps an address an an item ID to an amount of add-on items.
     items: StorageMap<(Address, u64), u64> = StorageMap{},
 }
 
 impl FuelScape for Contract {
     #[storage(read, write)]
-    fn mint_kill(wallet: Address, mob: u64) {
-        let result: Result<Identity, AuthError> = msg_sender();
+    fn lock(player: Address) {
+        let result = msg_sender();
         match result.unwrap() {
             Identity::Address(address) => assert(address == ADMIN),
             _ => revert(0),
         };
 
-        let amount = storage.kills.get((wallet, mob));
-        storage.kills.insert((wallet, mob), amount+1);
+        let locked = storage.players.get(player);
+        assert(!locked);
 
-        log(Minted{ wallet: wallet, mob: mob });
+        storage.players.insert(player, true);
+
+        log(Locked{ player: player });
     }
 
     #[storage(read, write)]
-    fn craft_item(kills: Vec<Kill>) {
-        assert(kills.len() > 0);
+    fn unlock(player: Address) {
+        let result = msg_sender();
+        match result.unwrap() {
+            Identity::Address(address) => assert(address == ADMIN),
+            _ => revert(0),
+        };
 
-        let result: Result<Identity, AuthError> = msg_sender();
+        let locked = storage.players.get(player);
+        assert(locked);
+
+        storage.players.insert(player, false);
+
+        log(Unlocked{ player: player });
+    }
+
+    #[storage(read, write)]
+    fn give(player: Address, item: u64, amount: u64) {
+        assert(amount > 0);
+
+        let result = msg_sender();
+        match result.unwrap() {
+            Identity::Address(address) => assert(address == ADMIN),
+            _ => revert(0),
+        };
+
+        let balance = storage.items.get((player, item));
+        storage.items.insert((player, item), balance + amount);
+
+        log(Given{ player: player, item: item, amount: amount });
+    }
+
+    #[storage(read, write)]
+    fn take(player: Address, item: u64, amount: u64) {
+       assert(amount > 0);
+
+        let result = msg_sender();
+        match result.unwrap() {
+            Identity::Address(address) => assert(address == ADMIN),
+            _ => revert(0),
+        };
+
+        let balance = storage.items.get((player, item));
+        assert(balance >= amount);
+        storage.items.insert((player, item), balance - amount);
+
+        log(Taken{ player: player, item: item, amount: amount });
+    }
+
+    #[storage(read, write)]
+    fn send(receiver: Address, item: u64, amount: u64) {
+        assert(amount > 0);
+
+        let result = msg_sender();
         let sender = match result.unwrap() {
             Identity::Address(address) => address,
             _ => revert(0),
         };
 
-        let mut i = 0;
-        let mut total = 0;
-        while i < kills.len() {
-            let kill = kills.get(i).unwrap();
-            let sender_amount = storage.kills.get((sender, kill.mob));
-            assert(sender_amount >= kill.amount);
+        let debited = storage.items.get((sender, item));
+        assert(debited >= amount);
+        storage.items.insert((sender, item), debited - amount);
 
-            storage.kills.insert((sender, kill.mob), sender_amount - kill.amount);
-            total = total + kill.amount;
-
-            log(Burned{ wallet: sender, mob: kill.mob, amount: kill.amount });
-        }
-
-        let amount = storage.items.get((sender, total));
-        storage.items.insert((sender, total), amount + 1);
-
-        log(Crafted{ wallet: sender, item: total });
-    }
-
-    #[storage(read, write)]
-    fn send_item(receiver: Address, item: u64, amount: u64) {
-        let result: Result<Identity, AuthError> = msg_sender();
-        let sender = match result.unwrap() {
-            Identity::Address(address) => address,
-            _ => revert(0),
-        };
-
-        let sender_amount = storage.items.get((sender, item));
-        assert(sender_amount >= amount);
-        storage.items.insert((sender, item), sender_amount - amount);
-
-        let receiver_amount = storage.items.get((receiver, item));
-        storage.items.insert((receiver, item), receiver_amount + amount);
+        let credited = storage.items.get((receiver, item));
+        storage.items.insert((receiver, item), credited + amount);
 
         log(Sent{ sender: sender, receiver: receiver, item: item, amount: amount });
     }
