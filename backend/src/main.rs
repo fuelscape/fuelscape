@@ -11,14 +11,15 @@ use std::sync::Mutex;
 use serde::Deserialize;
 use serde::Serialize;
 
+use poem::delete;
 use poem::error::BadGateway;
 use poem::error::BadRequest;
 use poem::error::Conflict;
 use poem::error::InternalServerError;
 use poem::error::NotFound;
-use poem::handler;
 use poem::listener::TcpListener;
 use poem::post;
+use poem::handler;
 use poem::web::Json;
 use poem::Result;
 use poem::Route;
@@ -45,6 +46,19 @@ lazy_static! {
         Mutex::new(lookup)
     };
 }
+
+
+#[tokio::main]
+async fn main() -> Result<(), std::io::Error> {
+    let app = Route::new()
+        .at("/links/", post(create_link))
+        .at("/items/", post(create_item))
+        .at("/items/", delete(delete_item));
+
+    let url = format!("127.0.0.1:{}", API_PORT);
+    Server::new(TcpListener::bind(url)).run(app).await
+}
+
 
 #[derive(Deserialize)]
 struct CreateLinkRequest {
@@ -103,19 +117,75 @@ struct CreateItemResponse {
 
 #[handler]
 async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResponse>> {
-    let recipient = {
-        let lookup = WALLET_LOOKUP.lock().unwrap();
-        match lookup.get(&req.player) {
-            Some(wallet) => wallet.clone(),
-            None => {
-                return Err(NotFound(Error::new(
-                    ErrorKind::NotFound,
-                    "player not linked to wallet",
-                )))
-            }
-        }
+    let wallet = get_wallet(&req.player).await?;
+    let fuelscape = get_fuelscape().await?;
+    
+    let give = fuelscape.methods().give(wallet.into(), req.item, req.amount);
+    let result = match give.call().await {
+            Ok(result) => result,
+            Err(err) => return Err(InternalServerError(err)),
     };
 
+    let res = CreateItemResponse {
+        player: req.player.clone(),
+        item: req.item,
+        amount: req.amount,
+        logs: fuelscape.fetch_logs(&result.receipts),
+    };
+
+    Ok(Json(res))
+}
+
+#[derive(Deserialize)]
+struct DeleteItemRequest {
+    player: String,
+    item: u64,
+    amount: u64,
+}
+
+#[derive(Serialize)]
+struct DeleteItemResponse {
+    player: String,
+    item: u64,
+    amount: u64,
+    logs: Vec<String>,
+}
+
+#[handler]
+async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResponse>> {
+    let wallet = get_wallet(&req.player).await?;
+    let fuelscape = get_fuelscape().await?;
+    
+    let take = fuelscape.methods().take(wallet.into(), req.item, req.amount);
+    let result = match take.call().await {
+            Ok(result) => result,
+            Err(err) => return Err(InternalServerError(err)),
+    };
+
+    let res = DeleteItemResponse {
+        player: req.player.clone(),
+        item: req.item,
+        amount: req.amount,
+        logs: fuelscape.fetch_logs(&result.receipts),
+    };
+
+    Ok(Json(res))
+}
+
+async fn get_wallet(player: &String) -> Result<Bech32Address> {
+    let lookup = WALLET_LOOKUP.lock().unwrap();
+    match lookup.get(player) {
+        Some(wallet) => Ok(wallet.clone()),
+        None => {
+            return Err(NotFound(Error::new(
+                ErrorKind::NotFound,
+                "player not linked to wallet",
+            )))
+        }
+    }
+}
+
+async fn get_fuelscape() -> Result<FuelScape> {
     let provider = match Provider::connect(NODE_URL).await {
         Ok(provider) => provider,
         Err(err) => return Err(BadGateway(err)),
@@ -145,29 +215,6 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
     };
 
     let fuelscape = FuelScape::new(address.into(), unlocked);
-    
-    let give = fuelscape.methods().give(recipient.into(), req.item, req.amount);
-    let result = match give.call().await {
-            Ok(result) => result,
-            Err(err) => return Err(InternalServerError(err)),
-    };
 
-    let res = CreateItemResponse {
-        player: req.player.clone(),
-        item: req.item,
-        amount: req.amount,
-        logs: fuelscape.fetch_logs(&result.receipts),
-    };
-
-    Ok(Json(res))
-}
-
-#[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
-    let app = Route::new()
-        .at("/links/", post(create_link))
-        .at("/items/", post(create_item));
-
-    let url = format!("127.0.0.1:{}", API_PORT);
-    Server::new(TcpListener::bind(url)).run(app).await
+    return Ok(fuelscape);
 }
