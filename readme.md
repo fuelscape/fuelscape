@@ -101,7 +101,7 @@ Request:
 
 ```json
 {
-    "name": "Player",
+    "player": "FuelGasm",
     "wallet": "fuel1xgg70aemkfcnjyemapv24v33wa4t428ju6x5f87y648dnsu6w3hqds9m9f"
 }
 ```
@@ -137,7 +137,7 @@ Request:
 
 ```json
 {
-    "name": "Player",
+    "player": "FuelGasm",
     "mob": 12345
 }
 ```
