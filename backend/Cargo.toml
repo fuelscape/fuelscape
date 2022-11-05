@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 fuel-gql-client = "0.13.2"
+lazy_static = "1.4.0"
 poem = "1.3.48"
 serde = "1.0.147"
-tokio = "1.21.2"
+tokio = {version = "1.21.2", features = ["rt", "rt-multi-thread", "macros"] }

@@ -289,6 +289,7 @@ name = "backend"
 version = "0.1.0"
 dependencies = [
  "fuel-gql-client",
+ "lazy_static",
  "poem",
  "serde",
  "tokio",
@@ -2786,6 +2787,7 @@ dependencies = [
  "libc",
  "memchr",
  "mio",
+ "num_cpus",
  "pin-project-lite",
  "socket2",
  "tokio-macros",
