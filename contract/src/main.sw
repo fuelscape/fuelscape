@@ -43,11 +43,11 @@ abi FuelScape {
 
     // give is called by the admin account to give a number of items to a player.
     #[storage(read, write)]
-    fn give(player: Address, item: u64, amount: u64);
+    fn give(player: Address, item: u64, amount: u64) -> u64;
 
     // take is called by the admin account to take a number of items from a player.
     #[storage(read, write)]
-    fn take(player: Address, item: u64, amount: u64);
+    fn take(player: Address, item: u64, amount: u64) -> u64;
 
     // transfer is called by a player to transfer items to another player.
     #[storage(read, write)]
@@ -98,7 +98,7 @@ impl FuelScape for Contract {
     }
 
     #[storage(read, write)]
-    fn give(player: Address, item: u64, amount: u64) {
+    fn give(player: Address, item: u64, amount: u64) -> u64 {
         assert(amount > 0);
 
         let result = msg_sender();
@@ -111,10 +111,12 @@ impl FuelScape for Contract {
         storage.items.insert((player, item), balance + amount);
 
         log(Given{ player: player, item: item, amount: amount });
+
+        return balance + amount;
     }
 
     #[storage(read, write)]
-    fn take(player: Address, item: u64, amount: u64) {
+    fn take(player: Address, item: u64, amount: u64) -> u64 {
        assert(amount > 0);
 
         let result = msg_sender();
@@ -128,6 +130,8 @@ impl FuelScape for Contract {
         storage.items.insert((player, item), balance - amount);
 
         log(Taken{ player: player, item: item, amount: amount });
+
+        return balance - amount;
     }
 
     #[storage(read, write)]
