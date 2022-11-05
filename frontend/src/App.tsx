@@ -40,14 +40,17 @@ await window.navigator.clipboard.writeText(ActiveWallet?.privateKey);
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+        <div className="Body-wrapper">
+        
+        {isReturnUser && <p> Welcome Back! </p>}
+        {ActiveWallet &&<><p> Active Wallet Address:</p> <p>{JSON.stringify(ActiveWallet.address).slice(4, -1)}</p></>}
         <button onClick={() =>  createNewWallet()}>
           New Wallet
         </button>
-        {isReturnUser && <p> Welcome Back! </p>}
-        {ActiveWallet &&<><h3> Active Wallet Address:</h3> <p>{JSON.stringify(ActiveWallet.address).slice(4, -1)}</p></>}
-        <button onClick={() =>  copyPvtKey()}> export pvt key</button>
+        <button onClick={() =>  copyPvtKey()}> Export Pvt Key</button>
+        </div>
       </header>
+      
     </div>
   );
 }
