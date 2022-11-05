@@ -35,7 +35,7 @@ use fuels_types::bech32::Bech32Address;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0xb6aa962b6538fa6951def08282136df7d2dec885102d1c9a6ec8f7e0701ba2b3";
+const CONTRACT_ID: &str = "0x20696b1bae562519ad0d23a249429f3893938fbe7c152401d8c4e05cbc24b2fa";
 
 use fuels::prelude::*;
 abigen!(FuelScape,"../contract/out/debug/fuelscape-abi.json");
