@@ -1,3 +1,3 @@
 # FuelScape
 
-An on chain integration for Open-RSC using Fuel.
+An on chain open source integration for RuneScape Classic
