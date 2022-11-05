@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
+use std::boxed::Box;
 use std::collections::HashMap;
 use std::io::Error;
 use std::io::ErrorKind;
@@ -102,7 +103,7 @@ struct CreateItemResponse {
 
 #[handler]
 async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResponse>> {
-    let wallet = {
+    let recipient = {
         let lookup = WALLET_LOOKUP.lock().unwrap();
         match lookup.get(&req.player) {
             Some(wallet) => wallet.clone(),
@@ -142,31 +143,20 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
             msg,
         ))),
     };
-    
-    let recipient = match Bech32Address::from_str(&req.player) {
-        Ok(recipient) => recipient,
-        Err(err) => return Err(BadRequest(err)),
-    };
 
     let fuelscape = FuelScape::new(address.into(), unlocked);
-
-
-    let result = match fuelscape.methods()
-        .give(recipient.into(), req.item, req.amount)
-        .call()
-        .await {
+    
+    let give = fuelscape.methods().give(recipient.into(), req.item, req.amount);
+    let result = match give.call().await {
             Ok(result) => result,
             Err(err) => return Err(InternalServerError(err)),
     };
-
-    let logs = fuelscape.fetch_logs(&result.receipts);
-
 
     let res = CreateItemResponse {
         player: req.player.clone(),
         item: req.item,
         amount: req.amount,
-        logs: logs,
+        logs: fuelscape.fetch_logs(&result.receipts),
     };
 
     Ok(Json(res))
