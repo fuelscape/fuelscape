@@ -160,3 +160,47 @@ Error:
 
 => any other error
 
+## Smart Contract
+
+The smart contract manages to types of NFTS:
+
+- mob kills; and
+- add-on items.
+
+For each type of mob, a wallet can hold multiple kills.
+For each type of item, a wallet can hold multiple copies.
+
+### Contract ABI
+
+```
+struct Kill {
+    mob: u64,
+    amount: u64,
+}
+
+abi FuelScape {
+    // mintKill is called by the backend service. Every time
+    // a player kills a mob, the server notifies the backend
+    // service, which calls this function to add a
+    // token for the given mob ID to the player's wallet.
+    #[storage(read, write)]
+    fn mintKill(receiver: Address, mob: u64);
+
+    // craftItem is called by the player with his own wallet.
+    // The player provides a list of the kills he wants to burn
+    // in order to mint an item. The more and higher order the
+    // kills, the better the item that will be minted.
+    #[storage(read, write)]
+    fn craftItem(kills []Kill);
+
+    // sendItem is called by a player to send the specified
+    // amount of the specified item type to another player.
+    #[storage(read, write)]
+    fn sendItem(receiver: Address, item: u64, amount: u64)
+
+    // Potential extensions:
+    // lendItem: to lend an item, with possibility to reclaim it
+    // reclaimItem: to reclaim a lent item
+    // tradeItem: to atomically trade an item for tokens
+}
+```
