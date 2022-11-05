@@ -1,5 +1,7 @@
 # FuelScape
 
+## Overview
+
 FuelScape is a fork of the open source RuneScape Classic framework (Open-RSC) server to integrate the game mechanics with the Fuel VM.
 
 The system is made up of the following components:
@@ -19,9 +21,11 @@ The system is made up of the following components:
   - enable crafting of add-on inventory NFTs from kills; and
   - allow trading of both mob kills and inventory.
 
-## Proof of Concept
+### Proof of Concept
 
-The proof of concept is the minimal version we want to finish for the hackathon. It would support the following:
+The proof of concept is the minimal version we want to finish for the hackathon.
+
+It would support the following:
 
 - frontend
   - generate private key
@@ -70,11 +74,89 @@ Linking the wallet to a player is done by calling a route on the REST API of our
 
 ### List Inventory
 
-All mob kills and add-on inventory items are represented by tokens on the chain. Fuel does not have fully developed token support yet, so we have to interact directly with the contract ABIs of the token contracts.
+All mob kills and add-on inventory items are represented by tokens on the chain.
+Fuel does not have fully developed token support yet, so we have to interact directly with the contract ABIs of the token contracts.
 
 1. Load the ABI for the smart contract
 2. Use hard-coded Contract ID, ABI and wallet to initialize interface:
    - [`new Contract(id, abi, walletOrProvider?`](https://fuellabs.github.io/fuels-ts/packages/fuel-ts-contract/classes/Contract.html#constructor)
 3. Use the correct entry in the `functions` array of the contract object to get contract state:
    - [`functions: InvokeFunctions = {}`](https://fuellabs.github.io/fuels-ts/packages/fuel-ts-contract/classes/Contract.html#functions)
+
+## Backend Service
+
+### Link Wallet
+
+One route creates a link between a player and a wallet address.
+This is needed because the RuneScape server doesn't know anything about wallet addresses.
+Keeping it agnostic of player's wallet addresses minimizes the changes needed to the server code.
+Instead, the backend service will keep track of the link between player names and wallets.
+This way, the server only needs needs to send notifications of game-related data.
+
+Route:
+
+`POST /links/`
+
+Request:
+
+```json
+{
+    "name": "Player",
+    "wallet": "fuel1xgg70aemkfcnjyemapv24v33wa4t428ju6x5f87y648dnsu6w3hqds9m9f"
+}
+```
+
+Response:
+
+`204 Created`
+
+=> link successfully created
+
+No-op:
+
+`409 Conflict`
+
+=> the link already exists
+
+Error:
+
+`500 Internal Server Error`
+
+=> any other error for now
+
+### Mint Kill
+
+In order to successfully mint a kill, the player name needs to be linked to a wallet.
+Then, the kill is minted by ID of the mob (meaning each mob has its own kill NFTs that are fungible within themselves).
+
+Route:
+
+`POST /kills/`
+
+Request:
+
+```json
+{
+    "name": "Player",
+    "mob": 12345
+}
+```
+
+Response:
+
+`204 Created`
+
+=> kill successfully minted
+
+No-op:
+
+`404 Not Found`
+
+=> player not associated to wallet
+
+Error:
+
+`500 Internal Server Error`
+
+=> any other error
 
