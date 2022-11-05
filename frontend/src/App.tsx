@@ -4,7 +4,6 @@ import "./App.css";
 import { Wallet, WalletUnlocked } from "@fuel-ts/wallet"
 import {AbstractWallet} from "@fuel-ts/interfaces"
 import { WalletManager } from "@fuel-ts/wallet-manager"
-import mygif from './images/FUELSCAPE2.gif'
 
 
 function App() {
