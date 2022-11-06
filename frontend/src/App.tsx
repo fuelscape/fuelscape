@@ -8,41 +8,64 @@ import { Routes, Route, Link } from "react-router-dom";
 import Market from "./components/Market";
 import Inventory from "./components/Inventory";
 import LinkWallet from "./components/LinkWallet";
+import { Button, TextInput, useMantineTheme } from "@mantine/core";
 
 function App() {
-  const localWallet = localStorage.getItem("ActiveWallet");
+  const walletAddress = localStorage.getItem("WalletAddress");
   const pvtKey = localStorage.getItem("PvtKey");
+  const playerName = localStorage.getItem("PlayerName")
   const [ActiveWallet, setActiveWallet] = useState<WalletUnlocked>();
-  const [isReturnUser, setReturnUser] = useState(false);
-  const manager = new WalletManager();
-  console.log("localWallet", localWallet);
+  const [player, setPlayer] = useState(playerName);
+  const [walletLinked, setWalletLinked] = useState(false);
+  console.log("walletAddress", walletAddress);
   console.log("pvtKey", pvtKey);
 
   useEffect(() => {
-    if (localWallet && pvtKey) {
+    if (walletAddress && pvtKey) {
       setActiveWallet(
         new WalletUnlocked(
-          "0x9d74ebdca29148547e0dd37e30adfec3e7988d061e7435892be934ef6809b190"
+          pvtKey,
         )
       );
-      setReturnUser(true);
       console.log("activewallet: ", ActiveWallet);
+      console.log("playername: ", playerName);
     }
   }, []);
 
-  let createNewWallet = () => {
+  let generateWallet = () => {
     let newWallet = Wallet.generate();
     setActiveWallet(newWallet);
-    localStorage.setItem("ActiveWallet", newWallet.address.toString());
+    localStorage.setItem("WalletAddress", newWallet.address.toString());
     localStorage.setItem("PvtKey", newWallet.privateKey);
   };
 
-  let copyPvtKey = async () => {
-    if (ActiveWallet?.address) {
-      await window.navigator.clipboard.writeText(ActiveWallet?.privateKey);
-      alert("Copied pvt key to clipboard ");
+  let resetWallet = () => {
+    setActiveWallet(undefined);
+    localStorage.clear();
+  };
+
+  let linkWallet = async () => {
+    let results = "someresults";
+    let body = {player: player, wallet: ActiveWallet?.address.toString()}
+    const url = `https://api.fuelscape.gg/links/`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      const json = await response.json();
+      setWalletLinked(true);
+      localStorage.setItem("PlayerName", player? player : "");
+      console.log("json:", json);
+    } catch (error) {
+      console.log("error", error);
     }
   };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -51,15 +74,31 @@ function App() {
             path="/"
             element={
               <div className="Body-wrapper">
-                {isReturnUser && <p> Welcome Back! </p>}
                 {ActiveWallet && (
-                  <>
-                    <p> Active Wallet Address:</p>{" "}
-                    <p>{JSON.stringify(ActiveWallet.address)}</p>
-                  </>
+                  <div className="Input-fields">
+
+                    <TextInput
+                      type="text"
+                      label="Player Address"
+                      value={ActiveWallet.address.toString()}
+                      size="xl"
+                      disabled
+                    />
+                    <br />
+                    <TextInput
+                      type="text"
+                      label="Player Name"
+                      onChange={(event) => setPlayer(event.currentTarget.value)}
+                      value={playerName ? playerName : ""}
+                      size="xl"
+                      disabled={walletLinked}
+                    />
+                    <br />
+                  </div>
                 )}
-                <button onClick={() => createNewWallet()}>New Wallet</button>
-                <button onClick={() => copyPvtKey()}> Export Pvt Key</button>
+                {!ActiveWallet && (<button onClick={() => generateWallet()}>Generate Wallet</button>)}
+                {ActiveWallet && (<button onClick={() => resetWallet()}>Reset Wallet</button>)}
+                {ActiveWallet && !walletLinked && (<button onClick={() => linkWallet()}>Link Wallet</button>)}
               </div>
             }
           />

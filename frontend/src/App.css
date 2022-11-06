@@ -37,6 +37,10 @@
   border-radius: 2rem;
 }
 
+.Input-fields {
+  min-width: 75vw;
+}
+
 .App-link {
   color: #61dafb;
 }
