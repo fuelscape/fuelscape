@@ -1,0 +1,298 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "()",
+      "components": [],
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 1,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "struct Given",
+      "components": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "item",
+          "type": 8,
+          "typeArguments": null
+        },
+        {
+          "name": "amount",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "struct Locked",
+      "components": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
+      "type": "struct Sent",
+      "components": [
+        {
+          "name": "sender",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "receiver",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "item",
+          "type": 8,
+          "typeArguments": null
+        },
+        {
+          "name": "amount",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 6,
+      "type": "struct Taken",
+      "components": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "item",
+          "type": 8,
+          "typeArguments": null
+        },
+        {
+          "name": "amount",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 7,
+      "type": "struct Unlocked",
+      "components": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 8,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "name": "lock",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "name": "unlock",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "item",
+          "type": 8,
+          "typeArguments": null
+        },
+        {
+          "name": "amount",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "name": "give",
+      "output": {
+        "name": "",
+        "type": 8,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "item",
+          "type": 8,
+          "typeArguments": null
+        },
+        {
+          "name": "amount",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "name": "take",
+      "output": {
+        "name": "",
+        "type": 8,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [
+        {
+          "name": "player",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "item",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "name": "view",
+      "output": {
+        "name": "",
+        "type": 8,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [
+        {
+          "name": "receiver",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "item",
+          "type": 8,
+          "typeArguments": null
+        },
+        {
+          "name": "amount",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "name": "send",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
+    }
+  ],
+  "loggedTypes": [
+    {
+      "logId": 165851,
+      "loggedType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 166131,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 166425,
+      "loggedType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 166728,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 167301,
+      "loggedType": {
+        "name": "",
+        "type": 5,
+        "typeArguments": []
+      }
+    }
+  ]
+}
