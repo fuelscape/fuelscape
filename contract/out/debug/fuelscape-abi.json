@@ -26,6 +26,23 @@
     },
     {
       "typeId": 3,
+      "type": "struct Entry",
+      "components": [
+        {
+          "name": "item",
+          "type": 9,
+          "typeArguments": null
+        },
+        {
+          "name": "balance",
+          "type": 9,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
       "type": "struct Given",
       "components": [
         {
@@ -35,19 +52,19 @@
         },
         {
           "name": "item",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         },
         {
-          "name": "amount",
-          "type": 8,
+          "name": "balance",
+          "type": 9,
           "typeArguments": null
         }
       ],
       "typeParameters": null
     },
     {
-      "typeId": 4,
+      "typeId": 5,
       "type": "struct Locked",
       "components": [
         {
@@ -59,7 +76,7 @@
       "typeParameters": null
     },
     {
-      "typeId": 5,
+      "typeId": 6,
       "type": "struct Sent",
       "components": [
         {
@@ -74,19 +91,19 @@
         },
         {
           "name": "item",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         },
         {
           "name": "amount",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         }
       ],
       "typeParameters": null
     },
     {
-      "typeId": 6,
+      "typeId": 7,
       "type": "struct Taken",
       "components": [
         {
@@ -96,19 +113,19 @@
         },
         {
           "name": "item",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         },
         {
-          "name": "amount",
-          "type": 8,
+          "name": "balance",
+          "type": 9,
           "typeArguments": null
         }
       ],
       "typeParameters": null
     },
     {
-      "typeId": 7,
+      "typeId": 8,
       "type": "struct Unlocked",
       "components": [
         {
@@ -120,7 +137,7 @@
       "typeParameters": null
     },
     {
-      "typeId": 8,
+      "typeId": 9,
       "type": "u64",
       "components": null,
       "typeParameters": null
@@ -166,19 +183,19 @@
         },
         {
           "name": "item",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         },
         {
           "name": "amount",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         }
       ],
       "name": "give",
       "output": {
         "name": "",
-        "type": 8,
+        "type": 9,
         "typeArguments": null
       }
     },
@@ -191,19 +208,19 @@
         },
         {
           "name": "item",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         },
         {
           "name": "amount",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         }
       ],
       "name": "take",
       "output": {
         "name": "",
-        "type": 8,
+        "type": 9,
         "typeArguments": null
       }
     },
@@ -213,17 +230,12 @@
           "name": "player",
           "type": 2,
           "typeArguments": null
-        },
-        {
-          "name": "item",
-          "type": 8,
-          "typeArguments": null
         }
       ],
       "name": "view",
       "output": {
         "name": "",
-        "type": 8,
+        "type": 0,
         "typeArguments": null
       }
     },
@@ -236,12 +248,12 @@
         },
         {
           "name": "item",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         },
         {
           "name": "amount",
-          "type": 8,
+          "type": 9,
           "typeArguments": null
         }
       ],
@@ -255,7 +267,23 @@
   ],
   "loggedTypes": [
     {
-      "logId": 165851,
+      "logId": 165852,
+      "loggedType": {
+        "name": "",
+        "type": 5,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 166132,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 166426,
       "loggedType": {
         "name": "",
         "type": 4,
@@ -263,7 +291,7 @@
       }
     },
     {
-      "logId": 166131,
+      "logId": 166731,
       "loggedType": {
         "name": "",
         "type": 7,
@@ -271,7 +299,7 @@
       }
     },
     {
-      "logId": 166425,
+      "logId": 166854,
       "loggedType": {
         "name": "",
         "type": 3,
@@ -279,18 +307,10 @@
       }
     },
     {
-      "logId": 166728,
+      "logId": 167334,
       "loggedType": {
         "name": "",
         "type": 6,
-        "typeArguments": []
-      }
-    },
-    {
-      "logId": 167301,
-      "loggedType": {
-        "name": "",
-        "type": 5,
         "typeArguments": []
       }
     }

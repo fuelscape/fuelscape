@@ -37,7 +37,7 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0xf473a5437d25e389bf6244f777e9f1909b3aa69d58393a16ff8962543378014d";
+const CONTRACT_ID: &str = "0xc1c1ebdb9ee15ca7ac39c3362944a1023a5ef1ca93e4444786a8f9a9a3b1fb6f";
 
 abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
@@ -141,7 +141,7 @@ struct CreateItemRequest {
 struct CreateItemResponse {
     wallet: String,
     item: u64,
-    amount: u64,
+    balance: u64,
     logs: Vec<String>,
 }
 
@@ -166,7 +166,7 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
     let res = CreateItemResponse {
         wallet: req.wallet.clone(),
         item: req.item,
-        amount: result.value,
+        balance: result.value,
         logs: fuelscape.fetch_logs(&result.receipts),
     };
 
@@ -184,7 +184,7 @@ struct DeleteItemRequest {
 struct DeleteItemResponse {
     wallet: String,
     item: u64,
-    amount: u64,
+    balance: u64,
     logs: Vec<String>,
 }
 
@@ -209,7 +209,7 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
     let res = DeleteItemResponse {
         wallet: req.wallet.clone(),
         item: req.item,
-        amount: result.value,
+        balance: result.value,
         logs: fuelscape.fetch_logs(&result.receipts),
     };
 
@@ -231,18 +231,19 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
 
     let fuelscape = get_contract().await?;
 
-    let mut items = HashMap::new();
-    for item in 0..32768 {
-        let view = fuelscape
-            .methods()
-            .view(address.clone().into(), item)
-            .tx_params(TxParameters::new(Some(1), Some(1000000), None));
-        let result = match block_on(view.call()) {
-            Ok(result) => result,
-            Err(err) => return Err(InternalServerError(err)),
-        };
-        items.insert(item, result.value);
-    }
+    let view = fuelscape
+        .methods()
+        .view(address.clone().into())
+        .tx_params(TxParameters::new(Some(1), Some(1000000), None));
+    let result = match block_on(view.call()) {
+        Ok(result) => result,
+        Err(err) => return Err(InternalServerError(err)),
+    };
+
+    let items = result.receipts
+        .iter()
+        .map(|receipt| (receipt.param1().unwrap(), receipt.param2().unwrap()))
+        .collect(); 
 
     let res = ListItemsResponse {
         player: wallet.clone(),

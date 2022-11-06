@@ -16,13 +16,13 @@ struct Unlocked {
 struct Given {
     player: Address,
     item: u64,
-    amount: u64,
+    balance: u64,
 }
 
 struct Taken {
     player: Address,
     item: u64,
-    amount: u64,
+    balance: u64,
 }
 
 struct Sent {
@@ -30,6 +30,11 @@ struct Sent {
     receiver: Address,
     item: u64,
     amount: u64,
+}
+
+struct Entry {
+    item: u64,
+    balance: u64,
 }
 
 abi FuelScape {
@@ -51,7 +56,7 @@ abi FuelScape {
 
     // view will return a list of all items a user owns
     #[storage(read)]
-    fn view(player: Address, item: u64) -> u64;
+    fn view(player: Address);
 
     // transfer is called by a player to transfer items to another player.
     #[storage(read, write)]
@@ -65,7 +70,7 @@ storage {
     // locks holds a list of players and whether they are locked
     locks: StorageMap<Address, bool> = StorageMap {},
     // items maps an address an an item ID to an amount of add-on items.
-    items: StorageMap<(Address, u64), u64> = StorageMap {},
+    balances: StorageMap<(Address, u64), u64> = StorageMap {},
 }
 
 impl FuelScape for Contract {
@@ -111,13 +116,13 @@ impl FuelScape for Contract {
             _ => revert(0),
         };
 
-        let balance = storage.items.get((player, item));
-        storage.items.insert((player, item), balance + amount);
+        let balance = storage.balances.get((player, item));
+        storage.balances.insert((player, item), balance + amount);
 
         log(Given {
             player: player,
             item: item,
-            amount: amount,
+            balance: balance + amount,
         });
 
         return balance + amount;
@@ -133,24 +138,32 @@ impl FuelScape for Contract {
             _ => revert(0),
         };
 
-        let balance = storage.items.get((player, item));
+        let balance = storage.balances.get((player, item));
         assert(balance >= amount);
-        storage.items.insert((player, item), balance - amount);
+        storage.balances.insert((player, item), balance - amount);
 
         log(Taken {
             player: player,
             item: item,
-            amount: amount,
+            balance: balance - amount,
         });
 
         return balance - amount;
     }
 
     #[storage(read)]
-    fn view(player: Address, item: u64) -> u64 {
-        let balance = storage.items.get((player, item));
-
-        return balance;
+    fn view(player: Address) {
+        let item = 0;
+        while item < 32768 {
+            let balance = storage.balances.get((player, item));
+            if balance == 0 {
+                continue;
+            }
+            log(Entry {
+                item: item,
+                balance: balance,
+            });
+        }
     }
 
     #[storage(read, write)]
@@ -166,12 +179,12 @@ impl FuelScape for Contract {
         let locked = storage.locks.get(sender);
         assert(!locked);
 
-        let debited = storage.items.get((sender, item));
+        let debited = storage.balances.get((sender, item));
         assert(debited >= amount);
-        storage.items.insert((sender, item), debited - amount);
+        storage.balances.insert((sender, item), debited - amount);
 
-        let credited = storage.items.get((receiver, item));
-        storage.items.insert((receiver, item), credited + amount);
+        let credited = storage.balances.get((receiver, item));
+        storage.balances.insert((receiver, item), credited + amount);
 
         log(Sent {
             sender: sender,
