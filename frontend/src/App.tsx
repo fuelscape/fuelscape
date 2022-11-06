@@ -11,20 +11,20 @@ import LinkWallet from "./components/LinkWallet";
 import { Button, TextInput, useMantineTheme } from "@mantine/core";
 
 function App() {
-  const walletAddress = localStorage.getItem("WalletAddress");
-  const pvtKey = localStorage.getItem("PvtKey");
-  const playerName = localStorage.getItem("PlayerName")
+  const localAddress = localStorage.getItem("WalletAddress");
+  const localKey = localStorage.getItem("WalletKey");
+  const localPlayer = localStorage.getItem("PlayerName")
   const [ActiveWallet, setActiveWallet] = useState<WalletUnlocked>();
-  const [player, setPlayer] = useState(playerName);
-  const [walletLinked, setWalletLinked] = useState(false);
-  console.log("walletAddress", walletAddress);
-  console.log("pvtKey", pvtKey);
+  const [playerName, setPlayerName] = useState(localPlayer);
+  const [walletLinked, setWalletLinked] = useState(localPlayer? true : false);
+  console.log("localAddress", localAddress);
+  console.log("localKey", localKey);
 
   useEffect(() => {
-    if (walletAddress && pvtKey) {
+    if (localAddress && localKey) {
       setActiveWallet(
         new WalletUnlocked(
-          pvtKey,
+          localKey,
         )
       );
       console.log("activewallet: ", ActiveWallet);
@@ -36,17 +36,20 @@ function App() {
     let newWallet = Wallet.generate();
     setActiveWallet(newWallet);
     localStorage.setItem("WalletAddress", newWallet.address.toString());
-    localStorage.setItem("PvtKey", newWallet.privateKey);
+    localStorage.setItem("WalletKey", newWallet.privateKey);
   };
 
   let resetWallet = () => {
     setActiveWallet(undefined);
+    setWalletLinked(false);
+    setPlayerName(null);
     localStorage.clear();
   };
 
   let linkWallet = async () => {
+    console.log("PlayerName: " + playerName);
     let results = "someresults";
-    let body = {player: player, wallet: ActiveWallet?.address.toString()}
+    let body = {player: playerName, wallet: ActiveWallet?.address.toString()}
     const url = `https://api.fuelscape.gg/links/`;
     try {
       const response = await fetch(url, {
@@ -59,11 +62,16 @@ function App() {
       });
       const json = await response.json();
       setWalletLinked(true);
-      localStorage.setItem("PlayerName", player? player : "");
+      localStorage.setItem("PlayerName", playerName? playerName : "");
       console.log("json:", json);
     } catch (error) {
       console.log("error", error);
     }
+  };
+
+  let loadInventory = async () => {
+    const url = 'https://api.fuelscape.gg/links/' + ActiveWallet?.address.toString();
+
   };
 
   return (
@@ -88,8 +96,8 @@ function App() {
                     <TextInput
                       type="text"
                       label="Player Name"
-                      onChange={(event) => setPlayer(event.currentTarget.value)}
                       value={playerName ? playerName : ""}
+                      onChange={(event) => setPlayerName(event.currentTarget.value)}
                       size="xl"
                       disabled={walletLinked}
                     />
@@ -99,6 +107,7 @@ function App() {
                 {!ActiveWallet && (<button onClick={() => generateWallet()}>Generate Wallet</button>)}
                 {ActiveWallet && (<button onClick={() => resetWallet()}>Reset Wallet</button>)}
                 {ActiveWallet && !walletLinked && (<button onClick={() => linkWallet()}>Link Wallet</button>)}
+                {ActiveWallet && !walletLinked && (<button onClick={() => loadInventory()}>Load Inventory</button>)}
               </div>
             }
           />
