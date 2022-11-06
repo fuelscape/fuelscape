@@ -71,8 +71,6 @@ storage {
     locks: StorageMap<Address, bool> = StorageMap {},
     // items maps an address an an item ID to an amount of add-on items.
     balances: StorageMap<(Address, u16), u32> = StorageMap {},
-    // maximums keeps track of the highest item type for each player.
-    maximums: StorageMap<Address, u16> = StorageMap {},
 }
 
 impl FuelScape for Contract {
@@ -121,11 +119,6 @@ impl FuelScape for Contract {
         let balance = storage.balances.get((player, item));
         storage.balances.insert((player, item), balance + amount);
 
-        let max = storage.maximums.get(player);
-        if item > max {
-            storage.maximums.insert(player, item);
-        }
-
         log(Given {
             player: player,
             item: item,
@@ -160,10 +153,8 @@ impl FuelScape for Contract {
 
     #[storage(read)]
     fn view(player: Address) {
-        let maximum = storage.maximums.get(player);
-
         let mut item: u16 = 0;
-        while item <= maximum {
+        while item <= 26155u16 {
             let balance = storage.balances.get((player, item));
             item = item + 1u16;
             if balance > 0u32 {
@@ -195,11 +186,6 @@ impl FuelScape for Contract {
 
         let credited = storage.balances.get((receiver, item));
         storage.balances.insert((receiver, item), credited + amount);
-
-        let max = storage.maximums.get(receiver);
-        if item > max {
-            storage.maximums.insert(receiver, item);
-        }
 
         log(Sent {
             sender: sender,

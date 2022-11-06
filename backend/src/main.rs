@@ -40,7 +40,7 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0x3ae583c795b3e4c7e052286b999c9e60c0674d3d60dc1d29da8261a58459190d";
+const CONTRACT_ID: &str = "0x47eab8b4ac0b49a9c7d6389427e07a7e61f52d88aeb6bb510dd7de211869a101";
 
 abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
@@ -226,7 +226,7 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
 #[derive(Serialize)]
 struct ListItemsResponse {
     player: String,
-    items: HashMap<u16, u32>,
+    balances: HashMap<u16, u32>,
 }
 
 #[handler]
@@ -247,19 +247,19 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
         Err(err) => return Err(InternalServerError(err)),
     };
 
-    let logs = match fuelscape.logs_with_type::<Entry>(&result.receipts) {
+    let entries = match fuelscape.logs_with_type::<Entry>(&result.receipts) {
         Ok(entries) => entries,
         Err(err) => return Err(InternalServerError(err)),
     };
 
-    let items = logs
+    let balances = entries
         .iter()
         .map(|entry| (entry.item, entry.balance))
         .collect(); 
 
     let res = ListItemsResponse {
         player: wallet.clone(),
-        items,
+        balances,
     };
 
     Ok(Json(res))
