@@ -49,6 +49,13 @@
   height: 50vh;
 }
 
+.Inventory-Slot {
+  padding: 2rem;
+  max-width: 10%;
+  margin: 1rem;
+  border-radius: 1rem;
+  border: black 3px solid
+}
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
