@@ -41,18 +41,28 @@
   color: #61dafb;
 }
 
+
+
+
 .Inventory-Wrapper {
   background-color: gray;
-  opacity: 0.75;
+  opacity: 0.80;
   border-radius: 2rem;
-  width: 50vw;
-  height: 50vh;
-}
+  min-height: 100%;
+  max-width: 100%;
 
+ 
+}
+.Slot-Wrapper {
+  margin: 4rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .Inventory-Slot {
   padding: 2rem;
-  max-width: 10%;
   margin: 1rem;
+
   border-radius: 1rem;
   border: black 3px solid
 }
