@@ -8,4 +8,4 @@ function Inventory() {
     </>)
 }
 
-export default Market;
+export default Inventory;
