@@ -24,7 +24,6 @@ use poem::Route;
 use poem::Server;
 
 use poem::get;
-use poem::delete;
 use poem::handler;
 use poem::post;
 
@@ -43,10 +42,8 @@ abigen!(FuelScape,"../contract/out/debug/fuelscape-abi.json");
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let app = Route::new()
-        .at("/locks/", post(create_lock))
-        .at("/locks/", delete(delete_lock))
-        .at("/items/", post(create_item))
-        .at("/items/", delete(delete_item))
+        .at("/locks/", post(create_lock).delete(delete_lock))
+        .at("/items/", post(create_item).delete(delete_item))
         .at("/items/:wallet", get(list_items));
 
     let url = format!("127.0.0.1:{}", API_PORT);
