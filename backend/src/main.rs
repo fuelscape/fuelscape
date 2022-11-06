@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::str::FromStr;
-use std::sync::Mutex;
+
+use futures::executor::block_on;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -29,9 +30,7 @@ use poem::post;
 
 use poem::error::BadGateway;
 use poem::error::BadRequest;
-use poem::error::Conflict;
 use poem::error::InternalServerError;
-use poem::error::NotFound;
 
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
@@ -78,7 +77,7 @@ async fn create_lock(req: Json<CreateLockRequest>) -> Result<Json<CreateLockResp
     let fuelscape = get_contract().await?;
 
     let lock = fuelscape.methods().lock(address.into());
-    let result = match lock.call().await {
+    let result = match block_on(lock.call()) {
         Ok(result) => result,
         Err(err) => return Err(InternalServerError(err)),
     };
@@ -117,7 +116,7 @@ async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResp
     let fuelscape = get_contract().await?;
 
     let lock = fuelscape.methods().unlock(address.into());
-    let result = match lock.call().await {
+    let result = match block_on(lock.call()) {
         Ok(result) => result,
         Err(err) => return Err(InternalServerError(err)),
     };
@@ -156,7 +155,7 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
     let fuelscape = get_contract().await?;
     
     let give = fuelscape.methods().give(address.into(), req.item, req.amount);
-    let result = match give.call().await {
+    let result = match block_on(give.call()) {
             Ok(result) => result,
             Err(err) => return Err(InternalServerError(err)),
     };
@@ -197,7 +196,7 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
     let fuelscape = get_contract().await?;
     
     let take = fuelscape.methods().take(address.into(), req.item, req.amount);
-    let result = match take.call().await {
+    let result = match block_on(take.call()) {
             Ok(result) => result,
             Err(err) => return Err(InternalServerError(err)),
     };
@@ -230,7 +229,7 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
     let mut items = HashMap::new();
     for item in 0..32768 {
         let view = fuelscape.methods().view(address.clone().into(), item);
-        let result = match view.call().await {
+        let result = match block_on(view.call()) {
                 Ok(result) => result,
                 Err(err) => return Err(InternalServerError(err)),
         };

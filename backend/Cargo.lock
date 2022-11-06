@@ -309,6 +309,7 @@ dependencies = [
  "fuels",
  "fuels-signers",
  "fuels-types",
+ "futures",
  "lazy_static",
  "poem",
  "serde",
