@@ -5,25 +5,23 @@ function Inventory() {
   let results = "someresults";
 
   useEffect(() => {
-    const url = "http://127.0.0.1:8080/items/";
-const body = {
-    'wallet': "fuel1cvwcrwsl09krl0dfqtttcemht483yux3t0mmh8xmpaz26edn6rrszg706m",
-    'item': 1323,
-    'amount': 1
-}
-    const fetchData = async () => {
+    const url = "https://api.fuelscape.gg/items/";
+
+const body = `{
+    "wallet": "fuel1cvwcrwsl09krl0dfqtttcemht483yux3t0mmh8xmpaz26edn6rrszg706m",
+    "item": 1323,
+    "amount": 1
+}`
+    const fetchData =async() => {
       
       try {
         const response = await fetch(url, {
-            mode: 'no-cors',
-          headers: {'Accept': '*/*',
-      'Content-Type': 'application/json'},
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-        const json = await response.json();
-        console.log(json);
-        setInventory(json);
+           method: "post", mode: 'no-cors',
+          headers: {"Content-Type": "application/json; charset=UTF-8" ,"Accept": "*/*"},
+          body:body
+        }).then(response => console.log(response)).then(data => {
+            console.log(data)
+        })
       } catch (error) {
         console.log("error", error);
       }
@@ -31,6 +29,8 @@ const body = {
 
     fetchData();
   }, []);
+
+
   return (
     <>
       <div className="Inventory-Wrapper">
