@@ -4,6 +4,8 @@ import "./App.css";
 import { Wallet, WalletUnlocked } from "@fuel-ts/wallet"
 import {AbstractWallet} from "@fuel-ts/interfaces"
 import { WalletManager } from "@fuel-ts/wallet-manager"
+import { Routes, Route, Link } from "react-router-dom";
+import Market from "./components/Market"
 
 
 function App() {
@@ -40,7 +42,9 @@ await window.navigator.clipboard.writeText(ActiveWallet?.privateKey);
   return (
     <div className="App">
       <header className="App-header">
-        <div className="Body-wrapper">
+        <Routes>
+          <Route path="/" element={
+          <div className="Body-wrapper">
         
         {isReturnUser && <p> Welcome Back! </p>}
         {ActiveWallet &&<><p> Active Wallet Address:</p> <p>{JSON.stringify(ActiveWallet.address).slice(4, -1)}</p></>}
@@ -48,7 +52,9 @@ await window.navigator.clipboard.writeText(ActiveWallet?.privateKey);
           New Wallet
         </button>
         <button onClick={() =>  copyPvtKey()}> Export Pvt Key</button>
-        </div>
+        </div>}/>
+        <Route path="market" element={<Market/>}/>
+        </Routes>
       </header>
       
     </div>
