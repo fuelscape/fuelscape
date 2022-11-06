@@ -7,6 +7,7 @@ import { WalletManager } from "@fuel-ts/wallet-manager";
 import { Routes, Route, Link } from "react-router-dom";
 import Market from "./components/Market";
 import Inventory from "./components/Inventory";
+import CheckInventory from "./components/CheckInventory";
 import LinkWallet from "./components/LinkWallet";
 import { Button, TextInput, useMantineTheme } from "@mantine/core";
 
@@ -123,14 +124,15 @@ function App() {
                 {ActiveWallet && (<button onClick={() => resetWallet()}>Reset Wallet</button>)}
                 {ActiveWallet && !walletLinked && (<button onClick={() => linkWallet()}>Link Wallet</button>)}
                 {ActiveWallet && walletLinked && (<button onClick={() => refreshInventory()}>Refresh Inventory</button>)}
+                {ActiveWallet && <Inventory props={balances} />}
               </div>
             }
           />
           <Route path="market" element={<Market />} />
-          <Route path="inventory/:id" element={<Inventory />} />
+          <Route path="items/:id" element={<CheckInventory />} />
           <Route path="linkwallet:id" element={<LinkWallet/>}/>
         </Routes>
-        <Inventory props={balances} />
+        
       </header>
     </div>
   );
