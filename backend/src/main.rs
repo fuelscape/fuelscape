@@ -34,10 +34,10 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0xf473a5437d25e389bf6244f777e9f1909b3aa69d58393a16ff8962543378014d";
+const CONTRACT_ID: &str = "f473a5437d25e389bf6244f777e9f1909b3aa69d58393a16ff8962543378014d";
 
 use fuels::prelude::abigen;
-abigen!(FuelScape,"../contract/out/debug/fuelscape-abi.json");
+abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -62,14 +62,12 @@ struct CreateLockResponse {
     logs: Vec<String>,
 }
 
-
 #[handler]
 async fn create_lock(req: Json<CreateLockRequest>) -> Result<Json<CreateLockResponse>> {
     let address = match Bech32Address::from_str(&req.wallet) {
         Ok(address) => address,
         Err(err) => return Err(BadRequest(err)),
     };
-
 
     let fuelscape = get_contract().await?;
 
@@ -85,9 +83,8 @@ async fn create_lock(req: Json<CreateLockRequest>) -> Result<Json<CreateLockResp
         logs: fuelscape.fetch_logs(&result.receipts),
     };
 
-     Ok(Json(res))
+    Ok(Json(res))
 }
-
 
 #[derive(Deserialize)]
 struct DeleteLockRequest {
@@ -101,14 +98,12 @@ struct DeleteLockResponse {
     logs: Vec<String>,
 }
 
-
 #[handler]
 async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResponse>> {
     let address = match Bech32Address::from_str(&req.wallet) {
         Ok(address) => address,
         Err(err) => return Err(BadRequest(err)),
     };
-
 
     let fuelscape = get_contract().await?;
 
@@ -124,7 +119,7 @@ async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResp
         logs: fuelscape.fetch_logs(&result.receipts),
     };
 
-     Ok(Json(res))
+    Ok(Json(res))
 }
 
 #[derive(Deserialize)]
@@ -150,11 +145,13 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
     };
 
     let fuelscape = get_contract().await?;
-    
-    let give = fuelscape.methods().give(address.into(), req.item, req.amount);
+
+    let give = fuelscape
+        .methods()
+        .give(address.into(), req.item, req.amount);
     let result = match block_on(give.call()) {
-            Ok(result) => result,
-            Err(err) => return Err(InternalServerError(err)),
+        Ok(result) => result,
+        Err(err) => return Err(InternalServerError(err)),
     };
 
     let res = CreateItemResponse {
@@ -189,13 +186,14 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
         Err(err) => return Err(BadRequest(err)),
     };
 
-
     let fuelscape = get_contract().await?;
-    
-    let take = fuelscape.methods().take(address.into(), req.item, req.amount);
+
+    let take = fuelscape
+        .methods()
+        .take(address.into(), req.item, req.amount);
     let result = match block_on(take.call()) {
-            Ok(result) => result,
-            Err(err) => return Err(InternalServerError(err)),
+        Ok(result) => result,
+        Err(err) => return Err(InternalServerError(err)),
     };
 
     let res = DeleteItemResponse {
@@ -222,26 +220,24 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
     };
 
     let fuelscape = get_contract().await?;
-    
+
     let mut items = HashMap::new();
     for item in 0..32768 {
         let view = fuelscape.methods().view(address.clone().into(), item);
         let result = match block_on(view.call()) {
-                Ok(result) => result,
-                Err(err) => return Err(InternalServerError(err)),
+            Ok(result) => result,
+            Err(err) => return Err(InternalServerError(err)),
         };
         items.insert(item, result.value);
     }
 
-
-    let res = ListItemsResponse{
+    let res = ListItemsResponse {
         player: wallet.clone(),
         items: items,
     };
 
     Ok(Json(res))
 }
-
 
 async fn get_contract() -> Result<FuelScape> {
     let provider = match Provider::connect(NODE_URL).await {
@@ -266,13 +262,15 @@ async fn get_contract() -> Result<FuelScape> {
 
     let address = match ContractId::from_str(CONTRACT_ID) {
         Ok(address) => address,
-        Err(msg) => return Err(InternalServerError(Error::new(
-            ErrorKind::InvalidInput,
-            msg,
-        ))),
+        Err(msg) => {
+            return Err(InternalServerError(Error::new(
+                ErrorKind::InvalidInput,
+                msg,
+            )))
+        }
     };
 
-    let fuelscape = FuelScape::new(address.into(), wallet);
+    let fuelscape = FuelScape::new(address.to_string(), wallet);
 
     return Ok(fuelscape);
 }

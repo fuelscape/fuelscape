@@ -63,9 +63,9 @@ const ADMIN = ~Address::from(0x688422a9abd94f79248f62d7c7f61be1c7f13eda365dfb20b
 
 storage {
     // locks holds a list of players and whether they are locked
-    locks: StorageMap<Address, bool> = StorageMap{},
+    locks: StorageMap<Address, bool> = StorageMap {},
     // items maps an address an an item ID to an amount of add-on items.
-    items: StorageMap<(Address, u64), u64> = StorageMap{},
+    items: StorageMap<(Address, u64), u64> = StorageMap {},
 }
 
 impl FuelScape for Contract {
@@ -82,7 +82,7 @@ impl FuelScape for Contract {
 
         storage.locks.insert(player, true);
 
-        log(Locked{ player: player });
+        log(Locked { player: player });
     }
 
     #[storage(read, write)]
@@ -98,7 +98,7 @@ impl FuelScape for Contract {
 
         storage.locks.insert(player, false);
 
-        log(Unlocked{ player: player });
+        log(Unlocked { player: player });
     }
 
     #[storage(read, write)]
@@ -114,7 +114,11 @@ impl FuelScape for Contract {
         let balance = storage.items.get((player, item));
         storage.items.insert((player, item), balance + amount);
 
-        log(Given{ player: player, item: item, amount: amount });
+        log(Given {
+            player: player,
+            item: item,
+            amount: amount,
+        });
 
         return balance + amount;
     }
@@ -133,14 +137,17 @@ impl FuelScape for Contract {
         assert(balance >= amount);
         storage.items.insert((player, item), balance - amount);
 
-        log(Taken{ player: player, item: item, amount: amount });
+        log(Taken {
+            player: player,
+            item: item,
+            amount: amount,
+        });
 
         return balance - amount;
     }
 
     #[storage(read)]
     fn view(player: Address, item: u64) -> u64 {
-
         let balance = storage.items.get((player, item));
 
         return balance;
@@ -166,6 +173,11 @@ impl FuelScape for Contract {
         let credited = storage.items.get((receiver, item));
         storage.items.insert((receiver, item), credited + amount);
 
-        log(Sent{ sender: sender, receiver: receiver, item: item, amount: amount });
+        log(Sent {
+            sender: sender,
+            receiver: receiver,
+            item: item,
+            amount: amount,
+        });
     }
 }
