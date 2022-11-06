@@ -7,37 +7,21 @@ FuelScape is a fork of the open source RuneScape Classic framework (Open-RSC) se
 The system is made up of the following components:
 
 - A frontend application to:
-  - generate, import and export private key;
-  - view inventory for player address; and
-  - trade, craft and manage inventory.
+  - generate a Fuel wallet address;
+  - export the associated private key;
+  - view player name and inventory.
 - A backend service to:
-  - mint new add-on inventory for players as NFTs; and
-  - list the inventory of players based on on-chain NFTs.
+  - give and take items from players during game play;
+  - lock and unlock wallets when players log in / log out;
+  - provide player name for wallet address;
+  - provide player on-chain inventory by player name.
 - A modified game server to:
-  - notify backend service of mob kills; and
-  - load player add-on inventory on login.
+  - notifiy backend of logins and logouts; and
+  - notify backend of inventory changes.
 - A Fuel smart contract to:
-  - allow minting of NFTs representing mob kills;
-  - enable crafting of add-on inventory NFTs from kills; and
-  - allow trading of both mob kills and inventory.
-
-### Proof of Concept
-
-The proof of concept is the minimal version we want to finish for the hackathon.
-
-It would support the following:
-
-- frontend
-  - generate private key
-  - view inventory (mob kills)
-- backend
-  - trigger mint of mob kill NFTs
-- server
-  - notify backend of mob kills with mob ID
-- contract
-  - mint mob kill NFTs
-  - list mob kill NFT IDs
-  - list mob kill balance per NFT ID
+  - mint and burn inventory items as NFTs;
+  - enabled / disable wallet transfers by address; and
+  - transfer inventory NFTs between wallets.
 
 ## Frontend Application
 
@@ -45,14 +29,9 @@ The frontend application should allow a player to opt into the add-on inventory 
 
 In order to do so, the user should:
 
-1. generate a wallet or load private key
+1. generate a wallet and back up private key
 2. associate the wallet address with his player name
-
-Once the player has a wallet, he can use it to interact with game state on chain:
-
-1. view mob kill and add-on inventory NFTs on his wallet
-2. mint mob kills into add-on inventory items
-3. transfer / trade / lend items to / with other players
+3. display inventory for the player's wallet
 
 ### Generate Wallet
 
@@ -179,28 +158,29 @@ struct Kill {
 }
 
 abi FuelScape {
-    // mintKill is called by the backend service. Every time
-    // a player kills a mob, the server notifies the backend
-    // service, which calls this function to add a
-    // token for the given mob ID to the player's wallet.
+    // lock will disable item transfers for a wallet
     #[storage(read, write)]
-    fn mintKill(receiver: Address, mob: u64);
+    fn lock(player: Address);
 
-    // craftItem is called by the player with his own wallet.
-    // The player provides a list of the kills he wants to burn
-    // in order to mint an item. The more and higher order the
-    // kills, the better the item that will be minted.
+    // unlock will enabled item transfers for a wallet
     #[storage(read, write)]
-    fn craftItem(kills []Kill);
+    fn unlock(player: Address);
 
-    // sendItem is called by a player to send the specified
-    // amount of the specified item type to another player.
+    // give will create new inventory items by giving them to a wallet
     #[storage(read, write)]
-    fn sendItem(receiver: Address, item: u64, amount: u64)
+    fn give(player: Address, item: u16, amount: u32);
+
+    // take will delete existing inventory items by removing them from a wallet
+    #[storage(read, write)]
+    fn take(player: Address, item: u16, amount: u32);
+
+    // send will transfer inventory items from one wallet to another wallet
+    #[storage(read, write)]
+    fn send(receiver: Address, item: u16, amount: u32)
 
     // Potential extensions:
-    // lendItem: to lend an item, with possibility to reclaim it
-    // reclaimItem: to reclaim a lent item
-    // tradeItem: to atomically trade an item for tokens
+    // lend: to lend an item, with possibility to reclaim it
+    // reclaim: to reclaim a lent item
+    // trade: to atomically trade an item for tokens
 }
 ```
