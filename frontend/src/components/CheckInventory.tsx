@@ -39,12 +39,12 @@ function Inventory() {
 
   return (
     <div className="Inventory-Wrapper">
-      <h1>Inventory:</h1>
+      <h3>{id}'s Inventory:</h3>
       <div className="Slot-Wrapper">
         <table>
           <tr>
-            <th>Icon</th>
-            <th>Id</th>
+            <th>Item</th>
+            <th>Token #</th>
             <th>Balance</th>
           </tr>
           {inventory?.balances?.map((e) => (
