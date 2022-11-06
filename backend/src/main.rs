@@ -35,7 +35,7 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0x20696b1bae562519ad0d23a249429f3893938fbe7c152401d8c4e05cbc24b2fa";
+const CONTRACT_ID: &str = "0xf473a5437d25e389bf6244f777e9f1909b3aa69d58393a16ff8962543378014d";
 
 use fuels::prelude::abigen;
 abigen!(FuelScape,"../contract/out/debug/fuelscape-abi.json");
