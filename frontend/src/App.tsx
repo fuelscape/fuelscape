@@ -17,8 +17,10 @@ function App() {
   const [ActiveWallet, setActiveWallet] = useState<WalletUnlocked>();
   const [playerName, setPlayerName] = useState(localPlayer);
   const [walletLinked, setWalletLinked] = useState(localPlayer? true : false);
+  const [balances, setBalances] = useState([]);
   console.log("localAddress", localAddress);
   console.log("localKey", localKey);
+  localStorage.clear();
 
   useEffect(() => {
     if (localAddress && localKey) {
@@ -43,7 +45,7 @@ function App() {
     setActiveWallet(undefined);
     setWalletLinked(false);
     setPlayerName(null);
-    localStorage.clear();
+    setBalances([]);
   };
 
   let linkWallet = async () => {
@@ -69,9 +71,22 @@ function App() {
     }
   };
 
-  let loadInventory = async () => {
-    const url = 'https://api.fuelscape.gg/links/' + ActiveWallet?.address.toString();
-
+  let refreshInventory = async () => {
+    const url = 'https://api.fuelscape.gg/items/' + playerName;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        method: "GET",
+        });
+        const json = await response.json();
+        console.log("json", json);
+        setBalances(json.balances);
+      } catch (error) {
+        console.log("error", error);
+      }
   };
 
   return (
@@ -107,7 +122,7 @@ function App() {
                 {!ActiveWallet && (<button onClick={() => generateWallet()}>Generate Wallet</button>)}
                 {ActiveWallet && (<button onClick={() => resetWallet()}>Reset Wallet</button>)}
                 {ActiveWallet && !walletLinked && (<button onClick={() => linkWallet()}>Link Wallet</button>)}
-                {ActiveWallet && !walletLinked && (<button onClick={() => loadInventory()}>Load Inventory</button>)}
+                {ActiveWallet && walletLinked && (<button onClick={() => refreshInventory()}>Refresh Inventory</button>)}
               </div>
             }
           />
@@ -115,6 +130,7 @@ function App() {
           <Route path="inventory/:id" element={<Inventory />} />
           <Route path="linkwallet:id" element={<LinkWallet/>}/>
         </Routes>
+        <Inventory props={balances} />
       </header>
     </div>
   );
