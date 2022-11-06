@@ -55,7 +55,7 @@ function App() {
                 {ActiveWallet && (
                   <>
                     <p> Active Wallet Address:</p>{" "}
-                    <p>{JSON.stringify(ActiveWallet.address).slice(4, -1)}</p>
+                    <p>{JSON.stringify(ActiveWallet.address)}</p>
                   </>
                 )}
                 <button onClick={() => createNewWallet()}>New Wallet</button>
