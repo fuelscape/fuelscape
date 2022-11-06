@@ -1,8 +1,12 @@
+#[macro_use]
+extern crate lazy_static;
+
 use std::boxed::Box;
 use std::collections::HashMap;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::str::FromStr;
+use std::sync::Mutex;
 
 use futures::executor::block_on;
 
@@ -33,8 +37,10 @@ use poem::get;
 use poem::handler;
 use poem::post;
 
+use poem::error::Conflict;
 use poem::error::BadGateway;
 use poem::error::BadRequest;
+use poem::error::NotFound;
 use poem::error::InternalServerError;
 
 const API_PORT: &str = "8080";
@@ -44,15 +50,28 @@ const CONTRACT_ID: &str = "0xeadd5a23608fbde7c787590d1c6925a958fdb627e0f03c39edb
 
 abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
+lazy_static! {
+    static ref WALLET_LOOKUP: Mutex<HashMap<String, String>> = {
+        let lookup = HashMap::new();
+        Mutex::new(lookup)
+    };
+    static ref PLAYER_LOOKUP: Mutex<HashMap<String, String>> = {
+        let lookup = HashMap::new();
+        Mutex::new(lookup)
+    };
+}
+
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let cors = Cors::new().allow_methods([Method::GET, Method::POST, Method::DELETE]);
 
     let app = Route::new()
         .at("/", get(version))
+        .at("/links/", post(create_link))
+        .at("/links/:wallet", get(retrieve_link))
         .at("/locks/", post(create_lock).delete(delete_lock))
         .at("/items/", post(create_item).delete(delete_item))
-        .at("/items/:wallet", get(list_items))
+        .at("/items/:player", get(list_items))
         .with(cors);
 
     let url = format!("127.0.0.1:{}", API_PORT);
@@ -73,14 +92,88 @@ fn version() -> Json<Version> {
     })
 }
 
-
 #[derive(Deserialize)]
-struct CreateLockRequest {
+struct CreateLinkRequest {
+    player: String,
     wallet: String,
 }
 
 #[derive(Serialize)]
+struct CreateLinkResponse {
+    player: String,
+    wallet: String,
+    linked: bool,
+}
+
+#[handler]
+async fn create_link(req: Json<CreateLinkRequest>) -> Result<Json<CreateLinkResponse>> {
+    let _address = match Bech32Address::from_str(&req.wallet) {
+        Ok(address) => address,
+        Err(err) => return Err(BadRequest(err)),
+    };
+
+    let mut wallets = WALLET_LOOKUP.lock().unwrap();
+    match wallets.get(&req.player) {
+        Some(_) => {
+            return Err(Conflict(Error::new(
+                ErrorKind::AlreadyExists,
+                "player already linked to wallet",
+            )))
+        }
+        None => (),
+    }
+
+    let mut players = PLAYER_LOOKUP.lock().unwrap();
+    match players.get(&req.wallet) {
+        Some(_) => {
+            return Err(Conflict(Error::new(
+                ErrorKind::AlreadyExists,
+                "wallet already linked to player",
+            )))
+        }
+        None => (),
+    }
+
+    wallets.insert(req.player.clone(), req.wallet.clone());
+    players.insert(req.wallet.clone(), req.player.clone());
+
+    let res = CreateLinkResponse {
+        player: req.player.clone(),
+        wallet: req.wallet.clone(),
+        linked: true,
+    };
+
+    Ok(Json(res))
+}
+
+#[derive(Serialize)]
+struct RetrieveLinkResponse {
+    player: String,
+    wallet: String,
+    linked: bool,
+}
+
+#[handler]
+async fn retrieve_link(Path(wallet): Path<String>) -> Result<Json<RetrieveLinkResponse>> {
+    let player = get_player(&wallet).await?;
+
+    let res = RetrieveLinkResponse{
+        player: player.clone(),
+        wallet: wallet.clone(),
+        linked: true,
+    };
+
+    Ok(Json(res))
+}
+
+#[derive(Deserialize)]
+struct CreateLockRequest {
+    player: String,
+}
+
+#[derive(Serialize)]
 struct CreateLockResponse {
+    player: String,
     wallet: String,
     locked: bool,
     logs: Vec<String>,
@@ -88,12 +181,13 @@ struct CreateLockResponse {
 
 #[handler]
 async fn create_lock(req: Json<CreateLockRequest>) -> Result<Json<CreateLockResponse>> {
-    let address = match Bech32Address::from_str(&req.wallet) {
-        Ok(address) => address,
-        Err(err) => return Err(BadRequest(err)),
-    };
-
+    let wallet = get_wallet(&req.player).await?;
     let fuelscape = get_contract().await?;
+
+    let address = match Bech32Address::from_str(&wallet) {
+        Ok(address) => address,
+        Err(err) => return Err(InternalServerError(err)),
+    };
 
     let lock = fuelscape
         .methods()
@@ -105,7 +199,8 @@ async fn create_lock(req: Json<CreateLockRequest>) -> Result<Json<CreateLockResp
     };
 
     let res = CreateLockResponse {
-        wallet: req.wallet.clone(),
+        player: req.player.clone(),
+        wallet: wallet.clone(),
         locked: true,
         logs: fuelscape.fetch_logs(&result.receipts),
     };
@@ -115,11 +210,12 @@ async fn create_lock(req: Json<CreateLockRequest>) -> Result<Json<CreateLockResp
 
 #[derive(Deserialize)]
 struct DeleteLockRequest {
-    wallet: String,
+    player: String,
 }
 
 #[derive(Serialize)]
 struct DeleteLockResponse {
+    player: String,
     wallet: String,
     locked: bool,
     logs: Vec<String>,
@@ -127,12 +223,13 @@ struct DeleteLockResponse {
 
 #[handler]
 async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResponse>> {
-    let address = match Bech32Address::from_str(&req.wallet) {
-        Ok(address) => address,
-        Err(err) => return Err(BadRequest(err)),
-    };
-
+    let wallet = get_wallet(&req.player).await?;
     let fuelscape = get_contract().await?;
+
+    let address = match Bech32Address::from_str(&wallet) {
+        Ok(address) => address,
+        Err(err) => return Err(InternalServerError(err)),
+    };
 
     let lock = fuelscape
         .methods()
@@ -144,7 +241,8 @@ async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResp
     };
 
     let res = DeleteLockResponse {
-        wallet: req.wallet.clone(),
+        player: req.player.clone(),
+        wallet: wallet.clone(),
         locked: false,
         logs: fuelscape.fetch_logs(&result.receipts),
     };
@@ -154,13 +252,14 @@ async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResp
 
 #[derive(Deserialize)]
 struct CreateItemRequest {
-    wallet: String,
+    player: String,
     item: u16,
     amount: u32,
 }
 
 #[derive(Serialize)]
 struct CreateItemResponse {
+    player: String,
     wallet: String,
     item: u16,
     balance: u32,
@@ -169,12 +268,13 @@ struct CreateItemResponse {
 
 #[handler]
 async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResponse>> {
-    let address = match Bech32Address::from_str(&req.wallet) {
-        Ok(address) => address,
-        Err(err) => return Err(BadRequest(err)),
-    };
-
+    let wallet = get_wallet(&req.player).await?;
     let fuelscape = get_contract().await?;
+
+    let address = match Bech32Address::from_str(&wallet) {
+        Ok(address) => address,
+        Err(err) => return Err(InternalServerError(err)),
+    };
 
     let give = fuelscape
         .methods()
@@ -186,7 +286,8 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
     };
 
     let res = CreateItemResponse {
-        wallet: req.wallet.clone(),
+        player: req.player.clone(),
+        wallet: wallet.clone(),
         item: req.item,
         balance: result.value,
         logs: fuelscape.fetch_logs(&result.receipts),
@@ -197,13 +298,14 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
 
 #[derive(Deserialize)]
 struct DeleteItemRequest {
-    wallet: String,
+    player: String,
     item: u16,
     amount: u32,
 }
 
 #[derive(Serialize)]
 struct DeleteItemResponse {
+    player: String,
     wallet: String,
     item: u16,
     balance: u32,
@@ -212,12 +314,13 @@ struct DeleteItemResponse {
 
 #[handler]
 async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResponse>> {
-    let address = match Bech32Address::from_str(&req.wallet) {
-        Ok(address) => address,
-        Err(err) => return Err(BadRequest(err)),
-    };
-
+    let wallet = get_wallet(&req.player).await?;
     let fuelscape = get_contract().await?;
+
+    let address = match Bech32Address::from_str(&wallet) {
+        Ok(address) => address,
+        Err(err) => return Err(InternalServerError(err)),
+    };
 
     let take = fuelscape
         .methods()
@@ -229,7 +332,8 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
     };
 
     let res = DeleteItemResponse {
-        wallet: req.wallet.clone(),
+        player: req.player.clone(),
+        wallet: wallet.clone(),
         item: req.item,
         balance: result.value,
         logs: fuelscape.fetch_logs(&result.receipts),
@@ -241,17 +345,25 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
 #[derive(Serialize)]
 struct ListItemsResponse {
     player: String,
-    balances: HashMap<u16, u32>,
+    wallet: String,
+    balances: Vec<Balance>,
+}
+
+#[derive(Serialize)]
+struct Balance {
+    item: u16,
+    balance: u32,
 }
 
 #[handler]
-async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse>> {
+async fn list_items(Path(player): Path<String>) -> Result<Json<ListItemsResponse>> {
+    let wallet = get_wallet(&player).await?;
+    let fuelscape = get_contract().await?;
+
     let address = match Bech32Address::from_str(&wallet) {
         Ok(address) => address,
-        Err(err) => return Err(BadRequest(err)),
+        Err(err) => return Err(InternalServerError(err)),
     };
-
-    let fuelscape = get_contract().await?;
 
     let view = fuelscape
         .methods()
@@ -269,15 +381,45 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
 
     let balances = entries
         .iter()
-        .map(|entry| (entry.item, entry.balance))
+        .map(|entry| Balance{
+            item: entry.item,
+            balance: entry.balance,
+        })
         .collect();
 
     let res = ListItemsResponse {
-        player: wallet.clone(),
+        player: player.clone(),
+        wallet: wallet.clone(),
         balances,
     };
 
     Ok(Json(res))
+}
+
+async fn get_wallet(player: &String) -> Result<String> {
+    let lookup = WALLET_LOOKUP.lock().unwrap();
+    match lookup.get(player) {
+        Some(wallet) => Ok(wallet.clone()),
+        None => {
+            return Err(NotFound(Error::new(
+                ErrorKind::NotFound,
+                "player not linked to wallet",
+            )))
+        }
+    }
+}
+
+async fn get_player(address: &String) -> Result<String> {
+    let lookup = PLAYER_LOOKUP.lock().unwrap();
+    match lookup.get(address) {
+        Some(player) => Ok(player.clone()),
+        None => {
+            return Err(NotFound(Error::new(
+                ErrorKind::NotFound,
+                "wallet not linked to player",
+            )))
+        }
+    }
 }
 
 async fn get_contract() -> Result<FuelScape> {
