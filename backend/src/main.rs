@@ -49,6 +49,7 @@ async fn main() -> Result<(), std::io::Error> {
     let cors = Cors::new().allow_methods([Method::GET, Method::POST, Method::DELETE]);
 
     let app = Route::new()
+        .at("/", get(version))
         .at("/locks/", post(create_lock).delete(delete_lock))
         .at("/items/", post(create_item).delete(delete_item))
         .at("/items/:wallet", get(list_items))
@@ -57,6 +58,21 @@ async fn main() -> Result<(), std::io::Error> {
     let url = format!("127.0.0.1:{}", API_PORT);
     Server::new(TcpListener::bind(url)).run(app).await
 }
+
+#[derive(Serialize)]
+struct Version {
+    name: String,
+    version: String,
+}
+
+#[handler]
+fn version() -> Json<Version> {
+    Json(Version{
+        name: String::from("fuelscape"),
+        version: String::from("0.1.0"),
+    })
+}
+
 
 #[derive(Deserialize)]
 struct CreateLockRequest {
