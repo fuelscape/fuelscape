@@ -40,7 +40,7 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0xb721928383aff184b2e13a20c21900d54a5f675cc61f5ebfb33fac1b00e8ca6a";
+const CONTRACT_ID: &str = "0x3ae583c795b3e4c7e052286b999c9e60c0674d3d60dc1d29da8261a58459190d";
 
 abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
@@ -241,7 +241,7 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
     let view = fuelscape
         .methods()
         .view(address.clone().into())
-        .tx_params(TxParameters::new(Some(1), Some(1000000), None));
+        .tx_params(TxParameters::new(Some(1), Some(100000000), None));
     let result = match block_on(view.call()) {
         Ok(result) => result,
         Err(err) => return Err(InternalServerError(err)),

@@ -166,13 +166,13 @@ impl FuelScape for Contract {
         while item <= maximum {
             let balance = storage.balances.get((player, item));
             item = item + 1u16;
-            if balance == 0u32 {
-                continue;
+            if balance > 0u32 {
+                log(Entry {
+                    item: item,
+                    balance: balance,
+                });
             }
-            log(Entry {
-                item: item,
-                balance: balance,
-            });
+            item = item + 1u16;
         }
     }
 
