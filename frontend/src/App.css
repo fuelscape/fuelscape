@@ -28,19 +28,39 @@
   color: white;
 }
 
-.Body-wrapper{
+.Body-wrapper {
   color: #000000;
   margin-top: 10vh;
   padding: 1rem;
   background-color: gray;
-    opacity: .75;
-    border-radius: 2rem;
+  opacity: 0.75;
+  border-radius: 2rem;
 }
 
 .App-link {
   color: #61dafb;
 }
 
+.Inventory-Wrapper {
+  background-color: gray;
+  opacity: 0.8;
+  border-radius: 2rem;
+  min-height: 100%;
+  max-width: 100%;
+}
+.Slot-Wrapper {
+  margin: 4rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.Inventory-Slot {
+  padding: 2rem;
+  margin: 1rem;
+
+  border-radius: 1rem;
+  border: black 3px solid;
+}
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
