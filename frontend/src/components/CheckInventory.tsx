@@ -51,8 +51,7 @@ function Inventory() {
             <tr>
               <td>
                 <img
-                  src={`https://www.osrsbox.com/osrsbox-db/items-icons/${e.item}
-      .png`}
+                  src={`https://www.osrsbox.com/osrsbox-db/items-icons/${e.item}.png`}
                 ></img>
               </td>
               <td>
