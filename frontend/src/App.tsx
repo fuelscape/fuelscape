@@ -8,6 +8,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import Market from "./components/Market";
 import Inventory from "./components/Inventory";
 import LinkWallet from "./components/LinkWallet";
+import { MantineProvider } from '@mantine/core';
 
 function App() {
   const localWallet = localStorage.getItem("ActiveWallet");
@@ -22,7 +23,7 @@ function App() {
     if (localWallet && pvtKey) {
       setActiveWallet(
         new WalletUnlocked(
-          "0x9d74ebdca29148547e0dd37e30adfec3e7988d061e7435892be934ef6809b190"
+          pvtKey
         )
       );
       setReturnUser(true);
@@ -44,6 +45,7 @@ function App() {
     }
   };
   return (
+    <MantineProvider withGlobalStyles withNormalizeCSS>
     <div className="App">
       <header className="App-header">
         <Routes>
@@ -65,10 +67,11 @@ function App() {
           />
           <Route path="market" element={<Market />} />
           <Route path="inventory/:id" element={<Inventory />} />
-          <Route path="linkwallet:id" element={<LinkWallet/>}/>
+          <Route path="link-wallet" element={<LinkWallet/>}/>
         </Routes>
       </header>
     </div>
+    </MantineProvider>
   );
 }
 
