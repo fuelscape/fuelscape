@@ -11,10 +11,13 @@ use serde::Serialize;
 
 use fuel_crypto::SecretKey;
 use fuel_gql_client::fuel_tx::ContractId;
+use fuels::prelude::abigen;
+use fuels::prelude::TxParameters;
 use fuels_signers::provider::Provider;
 use fuels_signers::wallet::DEFAULT_DERIVATION_PATH_PREFIX;
 use fuels_signers::WalletUnlocked;
 use fuels_types::bech32::Bech32Address;
+use fuels_types::bech32::Bech32ContractId;
 
 use poem::listener::TcpListener;
 use poem::web::Json;
@@ -34,9 +37,8 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "f473a5437d25e389bf6244f777e9f1909b3aa69d58393a16ff8962543378014d";
+const CONTRACT_ID: &str = "0xf473a5437d25e389bf6244f777e9f1909b3aa69d58393a16ff8962543378014d";
 
-use fuels::prelude::abigen;
 abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
 #[tokio::main]
@@ -71,7 +73,10 @@ async fn create_lock(req: Json<CreateLockRequest>) -> Result<Json<CreateLockResp
 
     let fuelscape = get_contract().await?;
 
-    let lock = fuelscape.methods().lock(address.into());
+    let lock = fuelscape
+        .methods()
+        .lock(address.into())
+        .tx_params(TxParameters::new(Some(1), Some(1000000), None));
     let result = match block_on(lock.call()) {
         Ok(result) => result,
         Err(err) => return Err(InternalServerError(err)),
@@ -107,7 +112,10 @@ async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResp
 
     let fuelscape = get_contract().await?;
 
-    let lock = fuelscape.methods().unlock(address.into());
+    let lock = fuelscape
+        .methods()
+        .unlock(address.into())
+        .tx_params(TxParameters::new(Some(1), Some(1000000), None));
     let result = match block_on(lock.call()) {
         Ok(result) => result,
         Err(err) => return Err(InternalServerError(err)),
@@ -148,7 +156,8 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
 
     let give = fuelscape
         .methods()
-        .give(address.into(), req.item, req.amount);
+        .give(address.into(), req.item, req.amount)
+        .tx_params(TxParameters::new(Some(1), Some(1000000), None));
     let result = match block_on(give.call()) {
         Ok(result) => result,
         Err(err) => return Err(InternalServerError(err)),
@@ -190,7 +199,8 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
 
     let take = fuelscape
         .methods()
-        .take(address.into(), req.item, req.amount);
+        .take(address.into(), req.item, req.amount)
+        .tx_params(TxParameters::new(Some(1), Some(1000000), None));
     let result = match block_on(take.call()) {
         Ok(result) => result,
         Err(err) => return Err(InternalServerError(err)),
@@ -223,7 +233,10 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
 
     let mut items = HashMap::new();
     for item in 0..32768 {
-        let view = fuelscape.methods().view(address.clone().into(), item);
+        let view = fuelscape
+            .methods()
+            .view(address.clone().into(), item)
+            .tx_params(TxParameters::new(Some(1), Some(1000000), None));
         let result = match block_on(view.call()) {
             Ok(result) => result,
             Err(err) => return Err(InternalServerError(err)),
@@ -233,7 +246,7 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
 
     let res = ListItemsResponse {
         player: wallet.clone(),
-        items: items,
+        items,
     };
 
     Ok(Json(res))
@@ -246,7 +259,6 @@ async fn get_contract() -> Result<FuelScape> {
     };
 
     let path = format!("{}/{}'/0/0", DEFAULT_DERIVATION_PATH_PREFIX, 0);
-
     let mnemonic: Vec<u8> = WALLET_MNEMONIC.bytes().collect();
     let phrase = match String::from_utf8(mnemonic) {
         Ok(phrase) => phrase,
@@ -257,7 +269,6 @@ async fn get_contract() -> Result<FuelScape> {
         Ok(secret) => secret,
         Err(err) => return Err(InternalServerError(err)),
     };
-
     let wallet = WalletUnlocked::new_from_private_key(secret, Some(provider));
 
     let address = match ContractId::from_str(CONTRACT_ID) {
@@ -270,7 +281,8 @@ async fn get_contract() -> Result<FuelScape> {
         }
     };
 
-    let fuelscape = FuelScape::new(address.to_string(), wallet);
+    let bech32 = Bech32ContractId::from(address);
+    let fuelscape = FuelScape::new(bech32.to_string(), wallet);
 
     return Ok(fuelscape);
 }
