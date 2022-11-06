@@ -53,7 +53,7 @@ function LinkWallet() {
       }
       placeholder="fuel1c......706m"
       rightSectionWidth={42}
-   onClick={()=>walletLink}
+   onClick={()=>walletLink()}
     />
     </div>
   );
