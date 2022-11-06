@@ -46,14 +46,13 @@ abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let cors = Cors::new()
-        .allow_methods([Method::GET, Method::POST, Method::DELETE]);
+    let cors = Cors::new().allow_methods([Method::GET, Method::POST, Method::DELETE]);
 
     let app = Route::new()
-    .at("/locks/", post(create_lock).delete(delete_lock))
-    .at("/items/", post(create_item).delete(delete_item))
-    .at("/items/:wallet", get(list_items))
-    .with(cors);
+        .at("/locks/", post(create_lock).delete(delete_lock))
+        .at("/items/", post(create_item).delete(delete_item))
+        .at("/items/:wallet", get(list_items))
+        .with(cors);
 
     let url = format!("127.0.0.1:{}", API_PORT);
     Server::new(TcpListener::bind(url)).run(app).await
@@ -255,7 +254,7 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
     let balances = entries
         .iter()
         .map(|entry| (entry.item, entry.balance))
-        .collect(); 
+        .collect();
 
     let res = ListItemsResponse {
         player: wallet.clone(),
