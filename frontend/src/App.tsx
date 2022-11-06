@@ -7,6 +7,7 @@ import { WalletManager } from "@fuel-ts/wallet-manager";
 import { Routes, Route, Link } from "react-router-dom";
 import Market from "./components/Market";
 import Inventory from "./components/Inventory";
+import LinkWallet from "./components/LinkWallet";
 
 function App() {
   const localWallet = localStorage.getItem("ActiveWallet");
@@ -64,6 +65,7 @@ function App() {
           />
           <Route path="market" element={<Market />} />
           <Route path="inventory/:id" element={<Inventory />} />
+          <Route path="linkwallet:id" element={<LinkWallet/>}/>
         </Routes>
       </header>
     </div>
