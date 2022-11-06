@@ -63,7 +63,7 @@ function App() {
             }
           />
           <Route path="market" element={<Market />} />
-          <Route path="inventory" element={<Inventory />} />
+          <Route path="inventory/:id" element={<Inventory />} />
         </Routes>
       </header>
     </div>

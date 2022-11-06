@@ -41,17 +41,12 @@
   color: #61dafb;
 }
 
-
-
-
 .Inventory-Wrapper {
   background-color: gray;
-  opacity: 0.80;
+  opacity: 0.8;
   border-radius: 2rem;
   min-height: 100%;
   max-width: 100%;
-
- 
 }
 .Slot-Wrapper {
   margin: 4rem;
@@ -64,7 +59,7 @@
   margin: 1rem;
 
   border-radius: 1rem;
-  border: black 3px solid
+  border: black 3px solid;
 }
 @keyframes App-logo-spin {
   from {
