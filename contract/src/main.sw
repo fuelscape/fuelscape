@@ -15,26 +15,26 @@ struct Unlocked {
 
 struct Given {
     player: Address,
-    item: u64,
-    balance: u64,
+    item: u16,
+    balance: u32,
 }
 
 struct Taken {
     player: Address,
-    item: u64,
-    balance: u64,
+    item: u16,
+    balance: u32,
 }
 
 struct Sent {
     sender: Address,
     receiver: Address,
-    item: u64,
-    amount: u64,
+    item: u16,
+    amount: u32,
 }
 
 struct Entry {
-    item: u64,
-    balance: u64,
+    item: u16,
+    balance: u32,
 }
 
 abi FuelScape {
@@ -48,11 +48,11 @@ abi FuelScape {
 
     // give is called by the admin account to give a number of items to a player.
     #[storage(read, write)]
-    fn give(player: Address, item: u64, amount: u64) -> u64;
+    fn give(player: Address, item: u16, amount: u32) -> u32;
 
     // take is called by the admin account to take a number of items from a player.
     #[storage(read, write)]
-    fn take(player: Address, item: u64, amount: u64) -> u64;
+    fn take(player: Address, item: u16, amount: u32) -> u32;
 
     // view will return a list of all items a user owns
     #[storage(read)]
@@ -60,7 +60,7 @@ abi FuelScape {
 
     // transfer is called by a player to transfer items to another player.
     #[storage(read, write)]
-    fn send(to: Address, item: u64, amount: u64);
+    fn send(to: Address, item: u16, amount: u32);
 }
 
 // ADMIN represents the admin wallet of the backend service, which can mint kills.
@@ -70,7 +70,9 @@ storage {
     // locks holds a list of players and whether they are locked
     locks: StorageMap<Address, bool> = StorageMap {},
     // items maps an address an an item ID to an amount of add-on items.
-    balances: StorageMap<(Address, u64), u64> = StorageMap {},
+    balances: StorageMap<(Address, u16), u32> = StorageMap {},
+    // maximums keeps track of the highest item type for each player.
+    maximums: StorageMap<Address, u16> = StorageMap {},
 }
 
 impl FuelScape for Contract {
@@ -107,8 +109,8 @@ impl FuelScape for Contract {
     }
 
     #[storage(read, write)]
-    fn give(player: Address, item: u64, amount: u64) -> u64 {
-        assert(amount > 0);
+    fn give(player: Address, item: u16, amount: u32) -> u32 {
+        assert(amount > 0u32);
 
         let result = msg_sender();
         match result.unwrap() {
@@ -118,6 +120,11 @@ impl FuelScape for Contract {
 
         let balance = storage.balances.get((player, item));
         storage.balances.insert((player, item), balance + amount);
+
+        let max = storage.maximums.get(player);
+        if item > max {
+            storage.maximums.insert(player, item);
+        }
 
         log(Given {
             player: player,
@@ -129,8 +136,8 @@ impl FuelScape for Contract {
     }
 
     #[storage(read, write)]
-    fn take(player: Address, item: u64, amount: u64) -> u64 {
-        assert(amount > 0);
+    fn take(player: Address, item: u16, amount: u32) -> u32 {
+        assert(amount > 0u32);
 
         let result = msg_sender();
         match result.unwrap() {
@@ -153,10 +160,13 @@ impl FuelScape for Contract {
 
     #[storage(read)]
     fn view(player: Address) {
-        let item = 0;
-        while item < 32768 {
+        let maximum = storage.maximums.get(player);
+
+        let mut item: u16 = 0;
+        while item <= maximum {
             let balance = storage.balances.get((player, item));
-            if balance == 0 {
+            item = item + 1u16;
+            if balance == 0u32 {
                 continue;
             }
             log(Entry {
@@ -167,8 +177,8 @@ impl FuelScape for Contract {
     }
 
     #[storage(read, write)]
-    fn send(receiver: Address, item: u64, amount: u64) {
-        assert(amount > 0);
+    fn send(receiver: Address, item: u16, amount: u32) {
+        assert(amount > 0u32);
 
         let result = msg_sender();
         let sender = match result.unwrap() {
@@ -185,6 +195,11 @@ impl FuelScape for Contract {
 
         let credited = storage.balances.get((receiver, item));
         storage.balances.insert((receiver, item), credited + amount);
+
+        let max = storage.maximums.get(receiver);
+        if item > max {
+            storage.maximums.insert(receiver, item);
+        }
 
         log(Sent {
             sender: sender,

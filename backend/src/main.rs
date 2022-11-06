@@ -19,9 +19,12 @@ use fuels_signers::WalletUnlocked;
 use fuels_types::bech32::Bech32Address;
 use fuels_types::bech32::Bech32ContractId;
 
+use poem::http::Method;
 use poem::listener::TcpListener;
+use poem::middleware::Cors;
 use poem::web::Json;
 use poem::web::Path;
+use poem::EndpointExt;
 use poem::Result;
 use poem::Route;
 use poem::Server;
@@ -37,16 +40,20 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0xc1c1ebdb9ee15ca7ac39c3362944a1023a5ef1ca93e4444786a8f9a9a3b1fb6f";
+const CONTRACT_ID: &str = "0xb721928383aff184b2e13a20c21900d54a5f675cc61f5ebfb33fac1b00e8ca6a";
 
 abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
+    let cors = Cors::new()
+        .allow_methods([Method::GET, Method::POST, Method::DELETE]);
+
     let app = Route::new()
-        .at("/locks/", post(create_lock).delete(delete_lock))
-        .at("/items/", post(create_item).delete(delete_item))
-        .at("/items/:wallet", get(list_items));
+    .at("/locks/", post(create_lock).delete(delete_lock))
+    .at("/items/", post(create_item).delete(delete_item))
+    .at("/items/:wallet", get(list_items))
+    .with(cors);
 
     let url = format!("127.0.0.1:{}", API_PORT);
     Server::new(TcpListener::bind(url)).run(app).await
@@ -133,15 +140,15 @@ async fn delete_lock(req: Json<DeleteLockRequest>) -> Result<Json<DeleteLockResp
 #[derive(Deserialize)]
 struct CreateItemRequest {
     wallet: String,
-    item: u64,
-    amount: u64,
+    item: u16,
+    amount: u32,
 }
 
 #[derive(Serialize)]
 struct CreateItemResponse {
     wallet: String,
-    item: u64,
-    balance: u64,
+    item: u16,
+    balance: u32,
     logs: Vec<String>,
 }
 
@@ -176,15 +183,15 @@ async fn create_item(req: Json<CreateItemRequest>) -> Result<Json<CreateItemResp
 #[derive(Deserialize)]
 struct DeleteItemRequest {
     wallet: String,
-    item: u64,
-    amount: u64,
+    item: u16,
+    amount: u32,
 }
 
 #[derive(Serialize)]
 struct DeleteItemResponse {
     wallet: String,
-    item: u64,
-    balance: u64,
+    item: u16,
+    balance: u32,
     logs: Vec<String>,
 }
 
@@ -219,7 +226,7 @@ async fn delete_item(req: Json<DeleteItemRequest>) -> Result<Json<DeleteItemResp
 #[derive(Serialize)]
 struct ListItemsResponse {
     player: String,
-    items: HashMap<u64, u64>,
+    items: HashMap<u16, u32>,
 }
 
 #[handler]
@@ -240,9 +247,14 @@ async fn list_items(Path(wallet): Path<String>) -> Result<Json<ListItemsResponse
         Err(err) => return Err(InternalServerError(err)),
     };
 
-    let items = result.receipts
+    let logs = match fuelscape.logs_with_type::<Entry>(&result.receipts) {
+        Ok(entries) => entries,
+        Err(err) => return Err(InternalServerError(err)),
+    };
+
+    let items = logs
         .iter()
-        .map(|receipt| (receipt.param1().unwrap(), receipt.param2().unwrap()))
+        .map(|entry| (entry.item, entry.balance))
         .collect(); 
 
     let res = ListItemsResponse {
