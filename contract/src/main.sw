@@ -156,7 +156,6 @@ impl FuelScape for Contract {
         let mut item: u16 = 0;
         while item <= 26155u16 {
             let balance = storage.balances.get((player, item));
-            item = item + 1u16;
             if balance > 0u32 {
                 log(Entry {
                     item: item,

@@ -40,7 +40,7 @@ use poem::error::InternalServerError;
 const API_PORT: &str = "8080";
 const NODE_URL: &str = "node-beta-1.fuel.network";
 const WALLET_MNEMONIC: &str = "wet person force drum vicious milk afraid target treat verify faculty dilemma forget across congress visa hospital skull twenty sick ship tent limit survey";
-const CONTRACT_ID: &str = "0x47eab8b4ac0b49a9c7d6389427e07a7e61f52d88aeb6bb510dd7de211869a101";
+const CONTRACT_ID: &str = "0xeadd5a23608fbde7c787590d1c6925a958fdb627e0f03c39edb06d65aa140d25";
 
 abigen!(FuelScape, "../contract/out/debug/fuelscape-abi.json");
 
